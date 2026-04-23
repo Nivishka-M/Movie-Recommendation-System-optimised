@@ -127,8 +127,11 @@ void calc_cluster_centroids(int dim, int n, int k, double *X, int *cluster_assig
           printf("WARNING: Empty cluster %d! \n", ii);
 
        // for each dimension
-        for (jj = 0; jj < dim; jj++)
-          new_cluster_centroid[ii*dim + jj] /= cluster_member_count[ii];  /// XXXX will divide by zero here for any empty clusters!
+        for (jj = 0; jj < dim; jj++) {
+          if (cluster_member_count[ii] > 0) {
+            new_cluster_centroid[ii*dim + jj] /= cluster_member_count[ii];  /// XXXX will divide by zero here for any empty clusters!
+          }
+        }
 
       }
   }
