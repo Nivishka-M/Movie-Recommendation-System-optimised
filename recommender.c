@@ -21,16 +21,16 @@ int findusers(){
     int j=0;
     int max = 0;
     while((line=fgets(tmp,sizeof(tmp),fstream))!=NULL){
-    record =  (line,",");
-    while(record!=NULL){
-        if(j==0){
-            int t = atoi(record);
-        if(t > max) max = t;
-        }
-        j++;
-        record = strtok(NULL,","); //iterate
-    }
-    j=0;
+    	record = strtok(line,",");
+		while(record!=NULL){
+			if(j==0){
+				int t = atoi(record);
+				if(t > max) max = t;
+			}
+			j++;
+			record = strtok(NULL,","); //iterate
+		}
+		j=0;
     }
     fclose(fstream);
     free(line);
@@ -56,6 +56,7 @@ void recommender(int uid){
 	get_movie_names(movienames,"Dataset\\movies.csv"); //getting movie names according to movie id(index)
 	get_movie_genres(moviegenres,"Dataset\\movies_genres.csv"); //getting movie genres according to movie id(index)
 
+	printf("Normalizing utility matrix...\n"); fflush(stdout);
 	double *normalized_matrix = (double *)malloc(sizeof(double) * No_of_users * No_of_movies);
 	normalize_matrix(utility_matrix,normalized_matrix,No_of_users,No_of_movies); //normalizing the utility matrix for similarity calculations
 
@@ -66,6 +67,7 @@ void recommender(int uid){
     double *normalizednewuser = malloc(sizeof(double) * No_of_movies);
 	normalize(newuser,normalizednewuser,No_of_movies); //normalizing the users ratings for similarity calculations
 
+	printf("Calculating similarity...\n"); fflush(stdout);
 	double *similarity = malloc(sizeof(double) * No_of_users);
 	calc_similarity(normalizednewuser,normalized_matrix,similarity,No_of_users,No_of_movies); //calculating similarity between new user and users present in dataset
 
@@ -74,7 +76,8 @@ void recommender(int uid){
 
 	// choose intial centroids at random from dataset(similarity) for clustering to find most similar users
 
-	//printf("Initial centroids\n");
+	printf("Initializing k-means centroids...\n"); fflush(stdout);
+	int attempts = 0;
 	for(i=0;i<k;i++){
 		int n = rand()%No_of_users; //choosing random index
 		int m=0, flag=0;
@@ -85,12 +88,19 @@ void recommender(int uid){
 			}
 		}
 		if(flag==1){ //if already chosen then choose again
-			i--;
-			continue;
+			attempts++;
+			if (attempts > 1000) {
+				// force fallback if we can't find k distinct centroids
+				centroids[i] = similarity[n] + (rand() % 1000) / 10000.0;
+			} else {
+				i--;
+				continue;
+			}
 		}
+		attempts = 0;
 		centroids[i] = similarity[n]; //setting the centroids according to random index generated
-		//printf("%lf\n",centroids[i]);
 	}
+	printf("Running k-means clustering...\n"); fflush(stdout);
 	kmeans(1,similarity,No_of_users,k,centroids,cluster_assignment); //clustering of similarity to find most similar users
 
 	int *similar_users = malloc(sizeof(int) * No_of_users);
@@ -118,41 +128,56 @@ void recommender(int uid){
 	double *predicted_ratings = malloc(sizeof(double) * No_of_movies); //array of ratings of those recommended movies
 	int no_of_recommended_movies = 0;
 
+	printf("Making predictions...\n"); fflush(stdout);
 	no_of_recommended_movies = make_prediction(newuser, similar_users, no_of_susers, similarity, utility_matrix, recommended_movies, predicted_ratings,No_of_movies); //making predictions and saving them in recommended_movies and predicted_ratings arrays
 
+	/*
 	for(i=0;i<no_of_recommended_movies;i++){ //printing the recommended movies to get an idea (movies whose ratings was calculated)
 		printf("Rating for movie %d: %.1lf\n",recommended_movies[i]+1,predicted_ratings[i]);
 	}
+	*/
 
 	sort(recommended_movies,predicted_ratings,no_of_recommended_movies); //sorting the recommended movies in decreasing order according to their predicted ratings
 
-	printf("Top 10 movies recommended for you: \n");
+	
+	printf("\nTop 10 movies recommended for you: \n");
 
-	for(i=0;i<1000;i++){ //selecting top 10 movies from the recommended movies
-		if(i==no_of_recommended_movies)  // if number of recommended movies is less than 10 then we will have to end loop early
-		{
-		    printf("\nSorry these are the only movies that can be recommended based on input.\nPlease enter more input.\n\n");
-		    break;
-		}
-		printf("%d. %s %s",i+1,&movienames[recommended_movies[i] * 1024], &moviegenres[recommended_movies[i] * 1024]);
-		if(i>0 && (i+1)%10==0){
-            printf("\nDo you want to see more movie recommendations? \nType '0' for No and '1' for Yes: ");
-            if(1 != scanf("%d",&choice)){
-                printf("\nCharacter inputs are not accepted.\n");
-                break;
-            }
-            if (choice == 0)break;
-            else if (choice == 1)
-                printf("");
-            else{
-                printf("\nInvalid choice.\n\n");
-                break;
-            }
+	for (i = 0; i < no_of_recommended_movies && i < 1000; i++) {
+
+		printf("%d. %s %s\n",
+			i + 1,
+			&movienames[recommended_movies[i] * 1024],
+			&moviegenres[recommended_movies[i] * 1024]);
+
+		if ((i + 1) % 10 == 0 && (i + 1) < no_of_recommended_movies) {
+
+			t = clock() - t;
+			time_taken = ((double)t) / CLOCKS_PER_SEC;
+			printf("\nTime taken to process: %.6lf seconds\n", time_taken);
+
+			printf("\nDo you want to see more movie recommendations?\n");
+			printf("Type '0' for No and '1' for Yes: ");
+
+			if (scanf("%d", &choice) != 1) {
+				printf("Invalid input. Only 0 or 1 allowed.\n");
+
+				// clear buffer
+				while (getchar() != '\n');
+				break;
+			}
+
+			if (choice == 0) {
+				break;
+			} else if (choice != 1) {
+				printf("Invalid choice.\n");
+				break;
+			}
 		}
 	}
-	t = clock() - t;
-    time_taken = ((double) t)/CLOCKS_PER_SEC;
-    printf("\nTime taken to process: %.2lf seconds\n",time_taken);
+	
+	if (i == no_of_recommended_movies) {
+		printf("\nSorry, these are the only movies available based on your input.\n");
+	}
 
 	//freeing the memory
 

@@ -17,7 +17,11 @@ int make_prediction(double *user, int *similar_users, int no_of_susers, double *
 			}
 			if(count>1){ //the movie is common between atleast two users otherwise if it only has one user then we will get that same rating
 				recommended_movies[no_of_recommended_movies] = i; //add movie index to recommended movies
-				predicted_ratings[no_of_recommended_movies] = sum1/sum2; //make prediction
+				if(sum2 != 0) {
+					predicted_ratings[no_of_recommended_movies] = sum1/sum2; //make prediction
+				} else {
+					predicted_ratings[no_of_recommended_movies] = 0;
+				}
 				no_of_recommended_movies++;
 			}
 		}
@@ -38,7 +42,11 @@ void test_predictions(double *user, int *similar_users, int no_of_susers, double
 				count++;
 			}
 			if(count>1){
-				predicted_ratings[i] = sum1/sum2;
+				if (sum2 != 0) {
+					predicted_ratings[i] = sum1/sum2;
+				} else {
+					predicted_ratings[i] = 0;
+				}
 			}else{
 				predicted_ratings[i] = 0;
 			}
