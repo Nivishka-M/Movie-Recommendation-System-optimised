@@ -139,7 +139,10 @@ void recommender(int uid){
 
 	sort(recommended_movies,predicted_ratings,no_of_recommended_movies); //sorting the recommended movies in decreasing order according to their predicted ratings
 
-	
+	t = clock() - t;
+	time_taken = ((double)t) / CLOCKS_PER_SEC;
+	printf("\nTime taken to process: %.6lf seconds\n", time_taken);
+
 	printf("\nTop 10 movies recommended for you: \n");
 
 	for (i = 0; i < no_of_recommended_movies && i < 1000; i++) {
@@ -150,11 +153,6 @@ void recommender(int uid){
 			&moviegenres[recommended_movies[i] * 1024]);
 
 		if ((i + 1) % 10 == 0 && (i + 1) < no_of_recommended_movies) {
-
-			t = clock() - t;
-			time_taken = ((double)t) / CLOCKS_PER_SEC;
-			printf("\nTime taken to process: %.6lf seconds\n", time_taken);
-
 			printf("\nDo you want to see more movie recommendations?\n");
 			printf("Type '0' for No and '1' for Yes: ");
 
