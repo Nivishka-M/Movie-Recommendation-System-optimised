@@ -4,102 +4,84 @@
 #include<string.h>
 
 void get_movie_names(char *movienames, char *s){
-	char *line, *record;
 	char tmp[1024];
-	int i=0,j=0;
+	int i=0;
 	FILE *fstream = fopen(s,"r");
-	while((line=fgets(tmp,sizeof(tmp),fstream))!=NULL){ //traverse till end of file while storing each line
-		record = strtok(line,","); //break line into multiple strings separated by comma
-		while(record!=NULL){
-			if(j==1){ //second string(i.e. moviename in the csv file)
-				strcpy(&movienames[i*1024],record);
-			}
-			j++;
-			record = strtok(NULL,","); //iterate
-		}
-		i++;j=0;
+	while(fgets(tmp,sizeof(tmp),fstream)){
+		char *p = tmp;
+		// Skiping first column (movie_id)
+		strtol(p, &p, 10);
+		if (*p == ',') p++;
+		
+		// second column is the movie name. Copying up to the next comma or newline.
+		char *end = p;
+		while(*end != ',' && *end != '\n' && *end != '\r' && *end != '\0') end++;
+		int len = end - p;
+		if (len > 1023) len = 1023; // prevent overflow
+		strncpy(&movienames[i*1024], p, len);
+		movienames[i*1024 + len] = '\0';
+		
+		i++;
 	}
 	fclose(fstream);
-	free(line);
-	free(record);
 }
 
 void get_movie_genres(char *moviegenres, char *s){
-	char *line, *record;
 	char tmp[1024];
-	int i=0,j=0;
+	int i=0;
 	FILE *fstream = fopen(s,"r");
-	while((line=fgets(tmp,sizeof(tmp),fstream))!=NULL){
-		record = strtok(line,",");
-		while(record!=NULL){
-			if(j==1){
-				strcpy(&moviegenres[i*1024],record);
-			}
-			j++;
-			record = strtok(NULL,",");
-		}
-		i++;j=0;
+	while(fgets(tmp,sizeof(tmp),fstream)){
+		char *p = tmp;
+		// Skip first column (movieId)
+		strtol(p, &p, 10);
+		if (*p == ',') p++;
+		
+		// Second column is genre
+		char *end = p;
+		while(*end != ',' && *end != '\n' && *end != '\r' && *end != '\0') end++;
+		int len = end - p;
+		if (len > 1023) len = 1023;
+		strncpy(&moviegenres[i*1024], p, len);
+		moviegenres[i*1024 + len] = '\0';
+		
+		i++;
 	}
 	fclose(fstream);
-	free(line);
-	free(record);
 }
 
 void get_utility_matrix(double *utility_matrix, char *s, int No_of_movies, int No_of_users, int uid){
-	char *line, *record;
 	char tmp[1024];
-	int i=0, j=0, k=0;
 	FILE *fstream = fopen(s,"r");
-	while((line=fgets(tmp,sizeof(tmp),fstream))!=NULL){
-		record = strtok(line,",");
-		while(record!=NULL){
-			if(k==0){ //first string is user id, which will give our row
-                i = atoi(record)-1;
-			}else if(k==1){ //second string is movie id which will give our coloumn
-				j = atoi(record)-1;
-			}else { //third is the actual rating
-			    /*if(l == uid){
-                    utility_matrix[i*No_of_movies+j] = 0.0;
-			    }*/
-			    //else{
-                    utility_matrix[i*No_of_movies + j] = atof(record); //converting string to float/double
-			    //}
-			}
-			record = strtok(NULL,",");
-			k++;
+	// in format: userId,movieId,rating,timestamp
+	while(fgets(tmp,sizeof(tmp),fstream)){
+		char *p = tmp;
+		int i = strtol(p, &p, 10) - 1;
+		if (*p == ',') p++;
+		int j = strtol(p, &p, 10) - 1;
+		if (*p == ',') p++;
+		double val = strtod(p, &p);
+		
+		if (i >= 0 && i < No_of_users && j >= 0 && j < No_of_movies) {
+			utility_matrix[i*No_of_movies + j] = val;
 		}
-		k=0;
 	}
 	fclose(fstream);
-	free(line);
-	free(record);
 }
 
 void new_user_movies(double *newuser, char *s, int uid){
-    char *line, *record;
 	char tmp[1024];
-	int i,j,k=0;
 	FILE *fstream = fopen(s,"r");
-	while((line=fgets(tmp,sizeof(tmp),fstream))!=NULL){
-		record = strtok(line,",");
-		while(record!=NULL){
-            if(k==0){
-                i = atoi(record) - 1;
-            }
-			if(k==1){
-				j = atoi(record) - 1;
-			}
-			if(k==2){
-				if(i+1==uid){
-					newuser[j] = atof(record);
-				}
-			}
-			k++;
-			record = strtok(NULL,",");
+	while(fgets(tmp,sizeof(tmp),fstream)){
+		char *p = tmp;
+		int i = strtol(p, &p, 10) - 1;
+		if (*p == ',') p++;
+		int j = strtol(p, &p, 10) - 1;
+		if (*p == ',') p++;
+		double val = strtod(p, &p);
+		
+		if (i + 1 == uid) {
+			newuser[j] = val;
 		}
-		k=0;
 	}
 	fclose(fstream);
-	free(line);
-	free(record);
 }

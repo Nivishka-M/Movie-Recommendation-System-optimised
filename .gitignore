@@ -1,2 +1,7 @@
 *.exe
 *.a
+
+/vtune_results/*
+/cpp_profiler_reports/*
+/cppcheck_reports/*
+out.txt

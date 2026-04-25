@@ -3,9 +3,12 @@
 #include<stdlib.h>
 
 int make_prediction(double *user, int *similar_users, int no_of_susers, double *similarity, double *utility_matrix, int *recommended_movies, double *predicted_ratings, int No_of_movies){
-	int i=0,k=0;
+	int i=0;
 	int no_of_recommended_movies = 0;
+	
+	#pragma omp parallel for schedule(dynamic)
 	for(i=0;i<No_of_movies;i++){ //traverse through each movie
+		int k=0;
 		double sum1=0, sum2=0;
 		int count=0;
 		if(user[i]==0){ //if not rated by the user
@@ -16,13 +19,16 @@ int make_prediction(double *user, int *similar_users, int no_of_susers, double *
 				count++;
 			}
 			if(count>1){ //the movie is common between atleast two users otherwise if it only has one user then we will get that same rating
-				recommended_movies[no_of_recommended_movies] = i; //add movie index to recommended movies
-				if(sum2 != 0) {
-					predicted_ratings[no_of_recommended_movies] = sum1/sum2; //make prediction
-				} else {
-					predicted_ratings[no_of_recommended_movies] = 0;
+				#pragma omp critical
+				{
+					recommended_movies[no_of_recommended_movies] = i; //add movie index to recommended movies
+					if(sum2 != 0) {
+						predicted_ratings[no_of_recommended_movies] = sum1/sum2; //make prediction
+					} else {
+						predicted_ratings[no_of_recommended_movies] = 0;
+					}
+					no_of_recommended_movies++;
 				}
-				no_of_recommended_movies++;
 			}
 		}
 	}
@@ -30,8 +36,11 @@ int make_prediction(double *user, int *similar_users, int no_of_susers, double *
 }
 
 void test_predictions(double *user, int *similar_users, int no_of_susers, double *similarity, double *utility_matrix, double *predicted_ratings, int No_of_movies){
-	int i=0, k=0;
+	int i=0;
+	
+	#pragma omp parallel for schedule(dynamic)
 	for(i=0;i<No_of_movies;i++){
+		int k=0;
 		double sum1=0, sum2=0;
 		int count=0;
 		if(user[i] != 0){

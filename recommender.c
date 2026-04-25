@@ -15,26 +15,15 @@
 #define No_of_movies 9125
 
 int findusers(){
-    char *line, *record;
     char tmp[1024];
     FILE *fstream = fopen("Dataset\\ratings_learn.csv","r");
-    int j=0;
     int max = 0;
-    while((line=fgets(tmp,sizeof(tmp),fstream))!=NULL){
-    	record = strtok(line,",");
-		while(record!=NULL){
-			if(j==0){
-				int t = atoi(record);
-				if(t > max) max = t;
-			}
-			j++;
-			record = strtok(NULL,","); //iterate
-		}
-		j=0;
+    while(fgets(tmp,sizeof(tmp),fstream)){
+    	char *p = tmp;
+		int t = strtol(p, &p, 10);
+		if(t > max) max = t;
     }
     fclose(fstream);
-    free(line);
-    free(record);
     return max;
 }
 
